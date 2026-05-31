@@ -44,4 +44,11 @@
             </x-primary-button>
         </div>
     </form>
+    <!-- 👇 在这里加这一段！注册按钮 -->
+    <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+        Don't have an account?
+        <a href="{{ route('register') }}" class="underline font-medium text-indigo-600 hover:text-indigo-500">
+            Register now
+        </a>
+    </div>
 </x-guest-layout>
