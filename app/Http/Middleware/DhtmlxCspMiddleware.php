@@ -12,21 +12,10 @@ class DhtmlxCspMiddleware
     {
         $response = $next($request);
 
-        // 只对后台和测试页面应用宽松策略
-        if ($request->is('admin*') || $request->is('test-dhtmlx')) {
-            // ✅ 完全移除 CSP 限制（开发环境专用）
-            $response->headers->remove('Content-Security-Policy');
-            
-            // 添加最宽松的 CSP
-            $response->headers->set('Content-Security-Policy', 
-                "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " .
-                "script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " .
-                "style-src * 'unsafe-inline' data: blob:; " .
-                "img-src * data: blob:; " .
-                "font-src * data: blob:; " .
-                "connect-src *;"
-            );
-        }
+        // 关键：整行无换行，避免 header 换行报错
+        $csp = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline' data: blob:; img-src * data: blob:; font-src * data: blob:; connect-src *;";
+
+        $response->headers->set('Content-Security-Policy', $csp);
 
         return $response;
     }

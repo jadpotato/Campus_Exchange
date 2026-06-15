@@ -1,98 +1,203 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             发布物品
         </h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
-                <form method="POST" action="{{ route('items.store') }}" enctype="multipart/form-data">
-                    @csrf
+            <div class="bg-white shadow sm:rounded-lg p-6">
+                <!-- DHTMLX 表单主体（稳定版配置，无兼容风险属性） -->
+                <div id="item-form"></div>
 
-                    <div class="space-y-6">
-                        <div>
-                            <x-input-label for="title" value="物品名称" />
-                            <x-text-input id="title" name="title" type="text" class="mt-1 block w-full" required />
-                            <x-input-error :messages="$errors->get('title')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="description" value="物品描述" />
-                            <textarea id="description" name="description" rows="4" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required></textarea>
-                            <x-input-error :messages="$errors->get('description')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="category" value="物品分类" />
-                            <select id="category" name="category" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="textbook">教材书籍</option>
-                                <option value="electronics">电子产品</option>
-                                <option value="daily">生活用品</option>
-                                <option value="clothing">衣物服饰</option>
-                                <option value="beauty">美妆个护</option>
-                                <option value="food">食品饮料</option>
-                                <option value="other">其他</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('category')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="trade_type" value="交易模式" />
-                            <select id="trade_type" name="trade_type" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                                <option value="sell">现金出售</option>
-                                <option value="exchange">以物换物</option>
-                                <option value="free">免费赠送</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('trade_type')" class="mt-2" />
-                        </div>
-
-                        <div id="price_field">
-                            <x-input-label for="price" value="价格 (元)" />
-                            <x-text-input id="price" name="price" type="number" step="0.01" min="0" class="mt-1 block w-full" />
-                            <x-input-error :messages="$errors->get('price')" class="mt-2" />
-                        </div>
-
-                        <div id="expected_item_field" class="hidden">
-                            <x-input-label for="expected_item" value="期望交换物品" />
-                            <x-text-input id="expected_item" name="expected_item" type="text" class="mt-1 block w-full" />
-                            <x-input-error :messages="$errors->get('expected_item')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="photos" value="物品图片 (最多5张)" />
-                            <input id="photos" name="photos[]" type="file" multiple accept="image/jpeg,image/png" class="mt-1 block w-full" />
-                            <p class="text-xs text-gray-500 mt-1">支持JPG、PNG格式，单张最大2MB</p>
-                            <x-input-error :messages="$errors->get('photos.*')" class="mt-2" />
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end mt-6">
-                        <x-primary-button>发布物品</x-primary-button>
-                    </div>
-                </form>
+                <!-- 原生图片上传（样式与表单对齐） -->
+                <div style="margin-top: 16px;">
+                    <label class="dhx_form-label" style="display:block;margin-bottom:8px;font-size:14px;color:#333;">
+                        物品图片 (最多5张)
+                    </label>
+                    <input 
+                        id="photos" 
+                        name="photos[]" 
+                        type="file" 
+                        multiple 
+                        accept="image/jpeg,image/png"
+                        style="width:100%;font-size:14px;color:#666;"
+                    >
+                    <p style="font-size:12px;color:#999;margin-top:4px;">
+                        支持JPG、PNG格式，单张最大2MB
+                    </p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 交易模式切换逻辑
-        document.getElementById('trade_type').addEventListener('change', function() {
-            const tradeType = this.value;
-            const priceField = document.getElementById('price_field');
-            const expectedItemField = document.getElementById('expected_item_field');
+        document.addEventListener('DOMContentLoaded', function() {
+            function startInit() {
+                if (typeof dhx === 'undefined' || !window.appReady) {
+                    setTimeout(startInit, 50);
+                    return;
+                }
+                try {
+                    var itemForm = new dhx.Form("item-form", {
+                        rows: [
+                            {
+                                type: "input",
+                                name: "title",
+                                label: "物品名称",
+                                labelPosition: "top"
+                            },
+                            {
+                                type: "textarea",
+                                name: "description",
+                                label: "物品描述",
+                                labelPosition: "top"
+                            },
+                            {
+                                type: "combo",
+                                name: "category",
+                                label: "物品分类",
+                                labelPosition: "top",
+                                value: "textbook",
+                                options: [
+                                    {value: "textbook", text: "教材书籍"},
+                                    {value: "electronics", text: "电子产品"},
+                                    {value: "daily", text: "生活用品"},
+                                    {value: "clothing", text: "衣物服饰"},
+                                    {value: "beauty", text: "美妆个护"},
+                                    {value: "food", text: "食品饮料"},
+                                    {value: "other", text: "其他"}
+                                ]
+                            },
+                            {
+                                type: "combo",
+                                name: "trade_type",
+                                label: "交易模式",
+                                labelPosition: "top",
+                                value: "sell",
+                                options: [
+                                    {value: "sell", text: "现金出售"},
+                                    {value: "exchange", text: "以物换物"},
+                                    {value: "free", text: "免费赠送"}
+                                ]
+                            },
+                            {
+                                type: "input",
+                                name: "price",
+                                label: "价格 (元)",
+                                labelPosition: "top",
+                                id: "price_field"
+                            },
+                            {
+                                type: "input",
+                                name: "expected_item",
+                                label: "期望交换物品",
+                                labelPosition: "top",
+                                id: "expected_item_field",
+                                hidden: true
+                            },
+                            {
+                                type: "button",
+                                text: "发布物品",
+                                view: "primary",
+                                submit: true,
+                                offsetTop: 20
+                            }
+                        ]
+                    });
 
-            if (tradeType === 'sell') {
-                priceField.classList.remove('hidden');
-                expectedItemField.classList.add('hidden');
-            } else if (tradeType === 'exchange') {
-                priceField.classList.add('hidden');
-                expectedItemField.classList.remove('hidden');
-            } else { // free
-                priceField.classList.add('hidden');
-                expectedItemField.classList.add('hidden');
+                    // 交易模式切换联动
+                    itemForm.getItem("trade_type").events.on("change", function(value) {
+                        if (value === "sell") {
+                            itemForm.showItem("price_field");
+                            itemForm.hideItem("expected_item_field");
+                        } else if (value === "exchange") {
+                            itemForm.hideItem("price_field");
+                            itemForm.showItem("expected_item_field");
+                        } else {
+                            itemForm.hideItem("price_field");
+                            itemForm.hideItem("expected_item_field");
+                        }
+                    });
+
+                    // 表单提交
+                    itemForm.events.on("submit", function() {
+                        var formValues = itemForm.getValue();
+
+                        // 基础校验
+                        if (!formValues.title || !formValues.description) {
+                            alert("请填写物品名称和描述");
+                            return;
+                        }
+                        if (formValues.trade_type === "sell" && !formValues.price) {
+                            alert("请输入物品价格");
+                            return;
+                        }
+
+                        // 构造 FormData，完全兼容原后端接口
+                        var formData = new FormData();
+                        formData.append("_token", document.querySelector('meta[name="csrf-token"]').content);
+                        formData.append("title", formValues.title);
+                        formData.append("description", formValues.description);
+                        formData.append("category", formValues.category);
+                        formData.append("trade_type", formValues.trade_type);
+
+                        if (formValues.trade_type === "sell") {
+                            formData.append("price", formValues.price);
+                        }
+                        if (formValues.trade_type === "exchange") {
+                            formData.append("expected_item", formValues.expected_item || "");
+                        }
+
+                        // 添加图片文件
+                        var photoInput = document.getElementById("photos");
+                        if (photoInput && photoInput.files.length > 0) {
+                            for (var i = 0; i < photoInput.files.length; i++) {
+                                formData.append("photos[]", photoInput.files[i]);
+                            }
+                        }
+
+                        // 提交到后端
+                        fetch("{{ route('items.store') }}", {
+                            method: "POST",
+                            body: formData,
+                            credentials: "same-origin"
+                        })
+                        .then(function(res) {
+                            if (res.redirected) {
+                                window.location.href = res.url;
+                                return;
+                            }
+                            if (!res.ok) throw new Error("发布失败，请检查填写内容");
+                            return res.json();
+                        })
+                        .then(function() {
+                            alert("发布成功！");
+                            window.location.href = "{{ route('items.index') }}";
+                        })
+                        .catch(function(error) {
+                            console.error("发布失败:", error);
+                            alert(error.message || "发布失败，请重试");
+                        });
+                    });
+
+                    console.log("✅ 表单初始化成功");
+                } catch (e) {
+                    console.error("❌ 表单初始化失败:", e);
+                }
             }
+            startInit();
         });
     </script>
+
+    <style>
+        /* 去除表单默认黑色外框、阴影，融入白色卡片 */
+        .dhx_form {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            font-family: inherit !important;
+        }
+    </style>
 </x-app-layout>
