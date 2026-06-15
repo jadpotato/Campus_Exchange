@@ -1,11 +1,10 @@
 <section>
     <header>
-        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-            {{ __('Profile Information') }}
+        <h2 class="text-lg font-bold text-black">
+            基本信息
         </h2>
-
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {{ __("Update your account's profile information and email address.") }}
+        <p class="mt-1 text-sm text-black">
+            更新您的账号个人资料信息、头像和电子邮箱地址。
         </p>
     </header>
 
@@ -17,41 +16,35 @@
         @csrf
         @method('patch')
 
-        <!-- ========== 新增：头像上传模块（无修改原有代码） ========== -->
         <div>
-            <x-input-label for="avatar" :value="__('Avatar')" />
-            <!-- 头像展示：默认头像/自定义头像 -->
-            <img src="{{ $user->avatar_url }}" class="w-20 h-20 rounded-full object-cover my-2" alt="Avatar">
-            <!-- 头像上传框 -->
-            <input id="avatar" name="avatar" type="file" class="mt-1 block w-full text-sm">
+            <x-input-label for="avatar" value="用户头像" class="text-black font-bold" />
+            <img src="{{ $user->avatar_url }}" class="w-20 h-20 rounded-full object-cover my-2 border border-gray-200" alt="Avatar">
+            <input id="avatar" name="avatar" type="file" class="mt-1 block w-full text-sm text-black bg-white border border-gray-300 rounded p-1">
             <x-input-error class="mt-2" :messages="$errors->get('avatar')" />
         </div>
-        <!-- ========== 新增结束 ========== -->
-
         <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+            <x-input-label for="name" value="用户名" class="text-black font-bold" />
+            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full text-black bg-white border border-gray-300" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
+            <x-input-label for="email" value="电子邮箱" class="text-black font-bold" />
+            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full text-black bg-white border border-gray-300" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
-                    <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
-                        {{ __('Your email address is unverified.') }}
-
-                        <button form="send-verification" class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
-                            {{ __('Click here to re-send the verification email.') }}
+                    <p class="text-sm mt-2 text-black">
+                        您的邮箱地址未验证。
+                        <button form="send-verification" class="underline text-sm text-indigo-600 hover:text-indigo-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            点击此处重新发送验证邮件。
                         </button>
                     </p>
 
                     @if (session('status') === 'verification-link-sent')
-                        <p class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
-                            {{ __('A new verification link has been sent to your email address.') }}
+                        <p class="mt-2 font-medium text-sm text-green-600">
+                            新的验证链接已发送至您的邮箱。
                         </p>
                     @endif
                 </div>
@@ -59,7 +52,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+            <x-primary-button>保存修改</x-primary-button>
 
             @if (session('status') === 'profile-updated')
                 <p
@@ -67,8 +60,8 @@
                     x-show="show"
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600 dark:text-gray-400"
-                >{{ __('Saved.') }}</p>
+                    class="text-sm text-green-600 font-medium"
+                >已保存。</p>
             @endif
         </div>
     </form>

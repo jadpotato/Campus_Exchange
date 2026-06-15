@@ -7,6 +7,7 @@ use App\Services\Interfaces\ItemServiceInterface;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 
 class ItemController extends Controller
 {
@@ -147,6 +148,24 @@ class ItemController extends Controller
         return response()->json([
             'data' => $items->items(),
             'total' => $items->total()
+        ]);
+    }
+    public function myItems(Request $request)
+    {
+        $userId = Auth::id();
+        $query  = Item::where('user_id', $userId);
+
+        // 强制获取URL上的status参数
+        $status = $request->query('status');
+        if (!is_null($status) && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        $list = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return response()->json([
+            'data'  => $list->items(),
+            'total' => $list->total()
         ]);
     }
 }

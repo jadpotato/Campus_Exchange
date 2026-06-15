@@ -114,6 +114,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 // API路由（用于DHTMLX Grid）
 Route::prefix('api')->middleware('auth')->group(function () {
     Route::get('/items', [ItemController::class, 'apiIndex']);
+    // 新增这一行
+    Route::get('/my/items', [ItemController::class, 'myItems']);
 });
 
 // 测试DHTMLX Grid

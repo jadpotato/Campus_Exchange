@@ -107,6 +107,28 @@ class Item extends Model
     }
 
     /**
+     * 分类映射字典（精准匹配发布页 DHTMLX Value）
+     */
+    public const CATEGORY_MAP = [
+        'textbook'    => '教材书籍',
+        'electronics' => '电子产品',
+        'daily'       => '生活用品',
+        'clothing'    => '衣物服饰',
+        'beauty'      => '美妆个护',
+        'food'        => '食品饮料',
+        'other'       => '其他',
+    ];
+
+    /**
+     * 访问器：分类中文名称
+     */
+    public function getCategoryTextAttribute()
+    {
+        $key = strtolower($this->category);
+        return self::CATEGORY_MAP[$key] ?? $this->category;
+    }
+
+    /**
      * 检查物品是否可以编辑
      */
     public function canBeEdited()
