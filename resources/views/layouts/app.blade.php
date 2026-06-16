@@ -6,14 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Campus Exchange') }}</title>
 
-    <!-- 字体 -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-    <!-- DHTMLX 本地资源（全局唯一引入，子页面不再重复加载） -->
     <link rel="stylesheet" href="/dhtmlx/suite.min.css">
 
-    <!-- Vite 资源 -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -74,14 +71,11 @@
 </head>
 <body>
     <div class="app-wrapper">
-        <!-- 顶部导航栏 -->
         <div id="dhx-toolbar" class="app-toolbar"></div>
 
         <div class="app-main">
-            <!-- 左侧分类侧边栏 -->
             <div id="dhx-sidebar" class="app-sidebar"></div>
 
-            <!-- 右侧主内容区 -->
             <div class="app-content">
                 @isset($header)
                 <header class="page-header">
@@ -97,7 +91,6 @@
         </div>
     </div>
 
-    <!-- DHTMLX 脚本（全局唯一引入） -->
     <script src="/dhtmlx/suite.min.js"></script>
 
     <script>
@@ -145,25 +138,35 @@
                 }
             });
 
-            // 2. 左侧分类侧边栏（分类ID与后端接口完全对齐）
+            // 2. 侧边栏初始化修复
+            var defaultSidebarData = [
+                { id: "all", value: "全部物品", icon: "dxi dxi-view-grid" },
+                { id: "textbook", value: "书籍教材", icon: "dxi dxi-book" },
+                { id: "electronics", value: "数码电子", icon: "dxi dxi-laptop" },
+                { id: "daily", value: "生活用品", icon: "dxi dxi-home-variant" },
+                { id: "clothing", value: "服饰鞋包", icon: "dxi dxi-tshirt-crew" },
+                { id: "free", value: "免费赠送", icon: "dxi dxi-gift" }
+            ];
+
+            // 实例化侧边栏
             window.sidebar = new dhx.Sidebar("dhx-sidebar", {
-                data: [
-                    { id: "all", value: "全部物品", icon: "dxi dxi-view-grid" },
-                    { id: "textbook", value: "书籍教材", icon: "dxi dxi-book" },
-                    { id: "electronics", value: "数码电子", icon: "dxi dxi-laptop" },
-                    { id: "daily", value: "生活用品", icon: "dxi dxi-home-variant" },
-                    { id: "clothing", value: "服饰鞋包", icon: "dxi dxi-tshirt-crew" },
-                    { id: "free", value: "免费赠送", icon: "dxi dxi-gift" }
-                ]
+                data: window.customSidebarConfig ? window.customSidebarConfig.data : defaultSidebarData
             });
 
-            // 分类点击筛选（与物品页表格联动）
-            sidebar.events.on("itemClick", function (id) {
-                if (window.gridInstance && window.gridInstance.data) {
+            // 绑定点击事件（优先支持页面自定义，再fallback到默认API）
+            window.sidebar.events.on("click", function (id) {
+                if (window.customSidebarConfig && typeof window.customSidebarConfig.onItemClick === 'function') {
+                    window.customSidebarConfig.onItemClick(id);
+                } else if (window.gridInstance && window.gridInstance.data) {
                     var url = id === "all" ? "/api/items" : "/api/items?category=" + id;
                     window.gridInstance.data.load(url);
                 }
             });
+
+            // 执行初始化后钩子
+            if (window.customSidebarConfig && typeof window.customSidebarConfig.afterInit === 'function') {
+                window.customSidebarConfig.afterInit(window.sidebar);
+            }
 
             // 3. 未读消息轮询
             setInterval(function () {
@@ -175,7 +178,6 @@
                 });
             }, 5000);
 
-            // 标记全局就绪
             window.appReady = true;
         });
     </script>
