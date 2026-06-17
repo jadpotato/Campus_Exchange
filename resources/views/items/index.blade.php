@@ -5,52 +5,22 @@
         </h2>
     </x-slot>
 
-    <div class="py-6">
+    <div class="py-6 bg-gray-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- 顶部筛选栏：DHTMLX Form -->
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg mb-6">
+            <div class="bg-white shadow sm:rounded-lg mb-6">
                 <div id="filter-form"></div>
             </div>
 
-            <!-- DHTMLX Grid 表格 -->
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden relative">
-                <div id="grid_container" style="height: 650px; width: 100%;"></div>
-                
-                <!-- 加载状态 -->
-                <div id="grid_loading" class="hidden absolute inset-0 bg-white/90 dark:bg-gray-800/90 flex items-center justify-center z-10 backdrop-blur-sm">
-                    <div class="flex flex-col items-center">
-                        <svg class="animate-spin h-12 w-12 text-indigo-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="text-gray-600 dark:text-gray-300 text-lg">正在加载数据...</span>
-                    </div>
-                </div>
-                
-                <!-- 空数据提示 -->
-                <div id="empty_state" class="hidden absolute inset-0 flex flex-col items-center justify-center h-650px bg-gray-50 dark:bg-gray-800/50">
-                    <svg class="w-24 h-24 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h3 class="text-xl text-gray-500 dark:text-gray-400 mb-2">暂无符合条件的物品</h3>
-                    <p class="text-gray-400 dark:text-gray-500 mb-4">尝试调整筛选条件或发布新的物品</p>
-                    <a href="/items/create" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
-                        发布新物品
-                    </a>
-                </div>
+            <div class="bg-white shadow sm:rounded-lg overflow-hidden relative border border-gray-100">
+                <div id="grid_container" style="height: 500px; width: 100%;"></div>
             </div>
             
-            <!-- 数据统计信息 -->
-            <div class="mt-4 text-gray-600 dark:text-gray-400 text-sm flex justify-between items-center">
+            <div class="mt-4 text-gray-400 text-xs flex justify-between items-center px-2">
                 <span id="data_stats">共 0 条物品数据</span>
-                <span>
-                    <button id="refreshBtn" class="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        刷新数据
-                    </button>
-                </span>
+                <button id="refreshBtn" class="text-gray-500 hover:text-indigo-600 flex items-center transition-colors text-xs border border-gray-200 hover:border-indigo-200 px-2.5 py-1 rounded bg-white shadow-sm cursor-pointer">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18"></path></svg>
+                    刷新数据
+                </button>
             </div>
         </div>
     </div>
@@ -58,37 +28,20 @@
     <script>
         var grid = null;
         var filterForm = null;
-        const loadingEl = document.getElementById('grid_loading');
-        const emptyStateEl = document.getElementById('empty_state');
-        const dataStatsEl = document.getElementById('data_stats');
         let debounceTimer = null;
 
-        // 手动维护分页状态
-        var pageState = {
-            page: 1,
-            pageSize: 20,
-            total: 0
-        };
+        var pageState = { page: 1, pageSize: 20, total: 0 };
         
-        // 分类和交易模式映射
+        // 核心修改：映射表对齐，直接支持后端传来的纯中文匹配
         const categoryMap = {
-            'textbook': '教材书籍',
-            'electronics': '电子产品',
-            'daily': '生活用品',
-            'clothing': '衣物服饰',
-            'beauty': '美妆个护',
-            'food': '食品饮料',
-            'other': '其他'
+            '教材书籍': '教材书籍', '电子产品': '电子产品', '生活用品': '生活用品',
+            '衣物服饰': '衣物服饰', '美妆个护': '美妆个护', '食品饮料': '食品饮料', '其他': '其他'
         };
-        
-        const tradeTypeMap = {
-            'sell': '现金出售',
-            'exchange': '以物换物',
-            'free': '免费赠送'
-        };
+        const tradeTypeMap = { '现金出售': '现金出售', '以物换物': '以物换物', '免费赠送': '免费赠送' };
+
+        const DEFAULT_IMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%23cbcbcb' stroke-width='1.5'><rect width='18' height='18' x='3' y='3' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='M21 15l-5-5L5 21'/></svg>";
 
         document.addEventListener('DOMContentLoaded', function() {
-            // 等待全局DHTMLX就绪
             function startInit() {
                 if (typeof dhx === 'undefined' || !window.appReady) {
                     setTimeout(startInit, 50);
@@ -97,20 +50,22 @@
                 try {
                     initFilterForm();
                     initGrid();
-                    document.getElementById('refreshBtn').addEventListener('click', function() {
-                        loadGridData(true);
-                    });
-                    watchDarkMode();
+                    
+                    const btn = document.getElementById('refreshBtn');
+                    if (btn) {
+                        btn.addEventListener('click', function() {
+                            loadGridData(true);
+                        });
+                    }
                     restoreFilterState();
                 } catch (e) {
-                    console.error('初始化失败:', e);
-                    hideLoading();
+                    console.error('DHTMLX 初始化失败:', e);
                 }
             }
             startInit();
         });
 
-        // ========== 筛选表单初始化（修复下拉框字段映射） ==========
+        // ========== 筛选表单初始化 ==========
         function initFilterForm() {
             filterForm = new dhx.Form("filter-form", {
                 padding: 20,
@@ -125,68 +80,36 @@
                                 label: "关键词",
                                 name: "keyword",
                                 labelPosition: "top",
-                                placeholder: "搜索物品名称/描述"
+                                placeholder: "搜索物品名称/描述",
+                                required: true, 
+                                errorMessage: "请输入关键词后再搜索",
+                                validation: function(value) { return value && value.trim().length > 0; }
                             },
                             {
                                 type: "combo",
                                 label: "分类",
                                 name: "category",
                                 labelPosition: "top",
-                                value: "",
-                                // 关键修复：手动指定值字段和显示字段
-                                valueField: "id",
-                                textField: "text",
-                                options: [
-                                    { id: "", text: "全部分类" },
-                                    { id: "textbook", text: "教材书籍" },
-                                    { id: "electronics", text: "电子产品" },
-                                    { id: "daily", text: "生活用品" },
-                                    { id: "clothing", text: "衣物服饰" },
-                                    { id: "beauty", text: "美妆个护" },
-                                    { id: "food", text: "食品饮料" },
-                                    { id: "other", text: "其他" }
-                                ]
+                                required: false,
+                                placeholder: "选择分类...",
+                                options: [] 
                             },
                             {
                                 type: "combo",
                                 label: "交易模式",
                                 name: "trade_type",
                                 labelPosition: "top",
-                                value: "",
-                                valueField: "id",
-                                textField: "text",
-                                options: [
-                                    { id: "", text: "全部模式" },
-                                    { id: "sell", text: "现金出售" },
-                                    { id: "exchange", text: "以物换物" },
-                                    { id: "free", text: "免费赠送" }
-                                ]
+                                required: false,
+                                placeholder: "选择模式...",
+                                options: [] 
                             },
                             {
                                 type: "multiselection",
                                 columns: 2,
                                 gap: 8,
                                 rows: [
-                                    {
-                                        type: "input",
-                                        label: "最低价格",
-                                        name: "min_price",
-                                        labelPosition: "top",
-                                        inputType: "number",
-                                        min: 0,
-                                        step: 0.01,
-                                        placeholder: "¥0.00"
-                                    },
-                                    {
-                                        type: "input",
-                                        label: "最高价格",
-                                        name: "max_price",
-                                        labelPosition: "top",
-                                        inputType: "number",
-                                        min: 0,
-                                        step: 0.01,
-                                        placeholder: "不限"
-                                    }
+                                    { type: "input", label: "最低价格", name: "min_price", labelPosition: "top", inputType: "number", min: 0, placeholder: "¥0.00" },
+                                    { type: "input", label: "最高价格", name: "max_price", labelPosition: "top", inputType: "number", min: 0, placeholder: "不限" }
                                 ]
                             }
                         ]
@@ -202,22 +125,8 @@
                                 width: 240,
                                 align: "end",
                                 rows: [
-                                    {
-                                        type: "button",
-                                        text: "搜索",
-                                        view: "primary",
-                                        submit: true,
-                                        fullWidth: true,
-                                        size: "medium"
-                                    },
-                                    {
-                                        type: "button",
-                                        text: "重置",
-                                        view: "secondary",
-                                        name: "resetBtn",
-                                        fullWidth: true,
-                                        size: "medium"
-                                    }
+                                    { type: "button", text: "搜索", view: "primary", submit: true, fullWidth: true, size: "medium" },
+                                    { type: "button", text: "重置", view: "secondary", name: "resetBtn", fullWidth: true, size: "medium" }
                                 ]
                             }
                         ]
@@ -225,10 +134,39 @@
                 ]
             });
 
-            // 搜索提交
+            // 🚀 核心修改：将 value 和 content 全部调整为之前定义的中文命名
+            try {
+                const categoryCombo = filterForm.getItem("category").getWidget();
+                if (categoryCombo && categoryCombo.data) {
+                    categoryCombo.data.parse([
+                        { value: "", content: "全部分类" },
+                        { value: "教材书籍", content: "教材书籍" },
+                        { value: "电子产品", content: "电子产品" },
+                        { value: "生活用品", content: "生活用品" },
+                        { value: "衣物服饰", content: "衣物服饰" },
+                        { value: "美妆个护", content: "美妆个护" },
+                        { value: "食品饮料", content: "食品饮料" },
+                        { value: "其他", content: "其他" }
+                    ]);
+                }
+
+                const tradeCombo = filterForm.getItem("trade_type").getWidget();
+                if (tradeCombo && tradeCombo.data) {
+                    tradeCombo.data.parse([
+                        { value: "", content: "全部模式" },
+                        { value: "现金出售", content: "现金出售" },
+                        { value: "以物换物", content: "以物换物" },
+                        { value: "免费赠送", content: "免费赠送" }
+                    ]);
+                }
+            } catch (comboErr) {
+                console.error("下拉框选项注入失败:", comboErr);
+            }
+
             filterForm.events.on("submit", function() {
+                if (!filterForm.validate()) { return; }
                 if (!validatePriceRange()) {
-                    showToast('价格范围输入错误，请检查', 'error');
+                    showToast('最高价不能低于最低价', 'error');
                     return;
                 }
                 pageState.page = 1;
@@ -236,7 +174,6 @@
                 loadGridData();
             });
 
-            // 重置按钮
             filterForm.getItem("resetBtn").events.on("click", function() {
                 filterForm.clear();
                 pageState.page = 1;
@@ -244,437 +181,167 @@
                 loadGridData();
             });
 
-            // 关键词输入防抖
             filterForm.getItem("keyword").events.on("input", function(value) {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     if (value.length >= 2 || value.length === 0) {
                         pageState.page = 1;
-                        saveFilterState();
                         loadGridData();
                     }
-                }, 500);
+                }, 400);
             });
-
-            // 价格实时验证
-            filterForm.getItem("min_price").events.on("change", validatePriceRange);
-            filterForm.getItem("max_price").events.on("change", validatePriceRange);
         }
 
-        // ========== 表格初始化（移除无效refresh调用） ==========
+        // ========== 表格初始化 ==========
         function initGrid() {
             grid = new dhx.Grid("grid_container", {
                 columns: [
                     { 
-                        id: "thumbnail", 
-                        header: [{ text: "缩略图" }], 
-                        width: 120,
-                        sortable: false,
-                        htmlEnable: true,
+                        id: "thumbnail", header: [{ text: "缩略图" }], width: 100, sortable: false, htmlEnable: true,
                         template: function(item) {
-                            const imgSrc = item.photos && item.photos.length > 0 
-                                ? '/storage/' + item.photos[0]
-                                : '/images/default-item.png';
-                            return '<div class="flex items-center justify-center h-20 bg-gray-50 dark:bg-gray-700/50 rounded-md overflow-hidden">' +
-                                '<img src="' + imgSrc + '" alt="' + escapeHtml(item.title || '物品图片') +
-                                '" class="max-w-full max-h-full object-cover hover:scale-105 transition-transform duration-300" loading="lazy" onerror="this.src=\'/images/default-item.png\'">' +
-                                '</div>';
+                            const hasPhotos = item && item.photos && Array.isArray(item.photos) && item.photos.length > 0;
+                            const imgSrc = hasPhotos ? '/storage/' + item.photos[0] : DEFAULT_IMG;
+                            return '<div class="flex items-center justify-center h-12 bg-gray-50 rounded overflow-hidden"><img src="' + imgSrc + '" class="max-w-full max-h-full object-cover" onerror="this.src=\'' + DEFAULT_IMG + '\'"></div>';
                         }
                     },
                     { 
-                        id: "title", 
-                        header: [{ text: "物品名称" }], 
-                        width: 300,
-                        htmlEnable: true,
-                        sortable: true,
+                        id: "title", header: [{ text: "物品名称" }], width: 280, htmlEnable: true, sortable: true,
                         template: function(item) {
-                            return '<a href="/items/' + item.id + '" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium transition-colors">' +
-                                escapeHtml(item.title || '未命名物品') + '</a>';
+                            return '<a href="/items/' + (item.id || '#') + '" class="text-indigo-600 hover:underline font-medium">' + escapeHtml(item.title || '未命名物品') + '</a>';
                         }
                     },
+                    { id: "category", header: [{ text: "分类" }], width: 120, sortable: true, template: function(item) { return categoryMap[item.category] || item.category || '未分类'; } },
                     { 
-                        id: "category", 
-                        header: [{ text: "分类" }], 
-                        width: 110,
-                        sortable: true,
+                        id: "price", header: [{ text: "价格" }], width: 130, sortable: true, align: "right",
                         template: function(item) {
-                            return categoryMap[item.category] || item.category || '未分类';
+                            // 兼容中文判断
+                            if (item.trade_type === '现金出售' || item.trade_type === 'sell') return '<span class="font-semibold text-green-600">¥' + parseFloat(item.price || 0).toFixed(2) + '</span>';
+                            if (item.trade_type === '以物换物' || item.trade_type === 'exchange') return '<span class="text-blue-600">以物换物</span>';
+                            if (item.trade_type === '免费赠送' || item.trade_type === 'free') return '<span class="text-red-500 font-medium">免费</span>';
+                            return '-';
                         }
                     },
-                    { 
-                        id: "price", 
-                        header: [{ text: "价格" }], 
-                        width: 120,
-                        sortable: true,
-                        align: "right",
-                        template: function(item) {
-                            switch(item.trade_type) {
-                                case 'sell':
-                                    return '<span class="font-semibold text-green-600 dark:text-green-400">¥' + parseFloat(item.price).toFixed(2) + '</span>';
-                                case 'exchange':
-                                    return '<span class="text-blue-600 dark:text-blue-400">以物换物</span>';
-                                case 'free':
-                                    return '<span class="text-red-600 dark:text-red-400 font-medium">免费</span>';
-                                default:
-                                    return '-';
-                            }
-                        }
-                    },
-                    { 
-                        id: "trade_type", 
-                        header: [{ text: "交易模式" }], 
-                        width: 120,
-                        sortable: true,
-                        template: function(item) {
-                            return tradeTypeMap[item.trade_type] || item.trade_type || '-';
-                        }
-                    },
-                    { 
-                        id: "view_count", 
-                        header: [{ text: "浏览" }], 
-                        width: 80,
-                        sortable: true,
-                        align: "center",
-                        template: function(item) {
-                            return item.view_count || 0;
-                        }
-                    },
-                    { 
-                        id: "created_at", 
-                        header: [{ text: "发布时间" }], 
-                        width: 180,
-                        sortable: true,
-                        sort: "desc",
-                        template: function(item) {
-                            return formatDateTime(item.created_at);
-                        }
-                    },
-                    { 
-                        id: "actions", 
-                        header: [{ text: "操作" }], 
-                        width: 120,
-                        sortable: false,
-                        htmlEnable: true,
-                        align: "center",
-                        template: function(item) {
-                            return '<a href="/items/' + item.id + '" class="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors text-sm">查看详情</a>';
-                        }
-                    }
+                    { id: "trade_type", header: [{ text: "交易模式" }], width: 120, sortable: true, template: function(item) { return tradeTypeMap[item.trade_type] || item.trade_type || '-'; } },
+                    { id: "view_count", header: [{ text: "浏览" }], width: 90, sortable: true, align: "center", template: function(item) { return item.view_count || 0; } },
+                    { id: "created_at", header: [{ text: "发布时间" }], width: 160, sortable: true, template: function(item) { return formatDateTime(item.created_at); } }
                 ],
-                sortable: true,
                 autoWidth: true,
-                autoHeight: false,
-                headerRowHeight: 50,
-                rowHeight: 85,
-                resize: true,
+                headerRowHeight: 42,
+                rowHeight: 64,
                 selection: "row",
-                multiselection: false,
-                navigation: true,
                 editable: false,
-                readonly: true,
-                theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-                emptyText: ""
+                theme: "light",
+                emptyText: "<div class='text-center py-16'><p class='text-gray-400 text-sm mb-1'>暂无符合条件的物品数据</p></div>"
             });
 
-            // 行点击跳转
-            grid.events.on("rowClick", function(id, e) {
-                if (!e.target.closest('a') && !e.target.closest('button')) {
-                    const item = grid.data.getItem(id);
-                    if (item && item.id) {
-                        window.location.href = '/items/' + item.id;
-                    }
-                }
+            grid.events.on("rowClick", function(id) {
+                const item = grid.data.getItem(id);
+                if (item && item.id) window.location.href = '/items/' + item.id;
             });
 
-            // 排序防抖
-            grid.events.on("sort", function() {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(function() {
-                    loadGridData();
-                }, 300);
-            });
-
-            // 数据加载完成回调
-            grid.events.on("dataParse", function() {
-                updateEmptyState();
-                updateDataStats();
-            });
-
-            // 暴露全局实例，供侧边栏筛选调用
-            window.gridInstance = grid;
-
-            // 初始加载
             loadGridData();
         }
 
         // ========== 数据加载 ==========
         function loadGridData(forceRefresh) {
-            if (typeof forceRefresh === 'undefined') forceRefresh = false;
             if (!grid || !filterForm) return;
             
-            showLoading();
-            
             const sort = grid.getSortingState ? grid.getSortingState() : {};
-            const formValues = filterForm.getValue();
-            const params = new URLSearchParams(formValues);
+            const params = new URLSearchParams(filterForm.getValue());
             
-            // 手动拼接分页参数
             params.append('page', pageState.page);
             params.append('per_page', pageState.pageSize);
-            
-            // 排序参数
             if (sort && sort.direction) {
                 params.append('sort_by', sort.by || 'created_at');
                 params.append('sort_dir', sort.direction);
             }
-            
-            if (forceRefresh) {
-                params.append('_t', Date.now());
-            }
+            if (forceRefresh) params.append('_t', Date.now());
+
+            if (forceRefresh) showToast('正在同步服务器最新数据...', 'info');
 
             fetch('/api/items?' + params.toString(), {
                 method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                credentials: 'same-origin'
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
             })
-            .then(function(res) {
-                if (!res.ok) throw new Error('HTTP错误：' + res.status);
-                return res.json();
+            .then(res => res.json())
+            .then(res => {
+                let incomingData = res.data || [];
+                grid.data.parse(incomingData);
+                pageState.total = (res.meta && res.meta.total) ? res.meta.total : incomingData.length;
+                document.getElementById('data_stats').textContent = '共 ' + pageState.total + ' 条物品数据';
+                
+                if (forceRefresh) showToast('数据刷新成功！', 'success');
             })
-            .then(function(res) {
-                grid.data.parse(res.data || []);
-                // 更新总数
-                if (res.meta && res.meta.total) {
-                    pageState.total = res.meta.total;
-                }
-                hideLoading();
-            })
-            .catch(function(error) {
-                hideLoading();
-                console.error('数据加载失败:', error);
-                showToast('数据加载失败，点击重试', 'error', true);
-                updateEmptyState();
+            .catch(() => {
+                showToast('无法连接到后端接口，请检查网络服务', 'error');
             });
         }
 
         // ========== 工具函数 ==========
-        function watchDarkMode() {
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.attributeName === 'class') {
-                        const isDark = document.documentElement.classList.contains('dark');
-                        try {
-                            grid.setTheme(isDark ? 'dark' : 'light');
-                        } catch (e) {
-                            console.warn('切换主题失败:', e);
-                        }
-                    }
-                });
-            });
-            observer.observe(document.documentElement, { attributes: true });
-            
-            // 窗口缩放时重绘（使用兼容方法）
-            window.addEventListener('resize', function() {
-                setTimeout(function() {
-                    if (grid && grid.paint) grid.paint();
-                }, 100);
-            });
-        }
-
         function validatePriceRange() {
             const values = filterForm.getValue();
-            const minPrice = parseFloat(values.min_price) || 0;
-            const maxPrice = parseFloat(values.max_price) || Infinity;
-            return !(minPrice > maxPrice && maxPrice !== Infinity);
+            const min = parseFloat(values.min_price) || 0;
+            const max = parseFloat(values.max_price) || Infinity;
+            return !(min > max && max !== Infinity);
         }
 
-        function saveFilterState() {
-            const state = filterForm.getValue();
-            localStorage.setItem('item_filter_state', JSON.stringify(state));
-        }
-
+        function saveFilterState() { localStorage.setItem('item_filter_state', JSON.stringify(filterForm.getValue())); }
         function restoreFilterState() {
             try {
                 const state = JSON.parse(localStorage.getItem('item_filter_state'));
-                if (!state) return;
-                filterForm.setValue(state);
-            } catch (e) {
-                console.warn('恢复筛选条件失败:', e);
-            }
+                if (state) filterForm.setValue(state);
+            } catch (e) {}
         }
 
-        function updateEmptyState() {
-            const hasData = grid.data.getLength() > 0;
-            emptyStateEl.classList.toggle('hidden', hasData);
-            if (!hasData) {
-                emptyStateEl.style.zIndex = '5';
-            } else {
-                emptyStateEl.style.zIndex = '-1';
-            }
-        }
-
-        function updateDataStats() {
-            dataStatsEl.textContent = '共 ' + pageState.total + ' 条物品数据';
-        }
-
-        function showLoading() {
-            loadingEl.classList.remove('hidden');
-            if (filterForm) filterForm.disable();
-        }
-
-        function hideLoading() {
-            loadingEl.classList.add('hidden');
-            if (filterForm) filterForm.enable();
-        }
-
+        // 格式化时间
         function formatDateTime(dateString) {
             if (!dateString) return '-';
-            
-            try {
-                const date = new Date(dateString);
-                const now = new Date();
-                const diff = now - date;
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                
-                if (days === 0) {
-                    return '今天 ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
-                } else if (days === 1) {
-                    return '昨天 ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
-                } else if (days < 7) {
-                    return days + '天前';
-                } else {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const hours = String(date.getHours()).padStart(2, '0');
-                    const minutes = String(date.getMinutes()).padStart(2, '0');
-                    return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
-                }
-            } catch (e) {
-                return dateString.substring(0, 16).replace('T', ' ');
-            }
+            const date = new Date(dateString);
+            return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
         }
 
+        // 安全转义 HTML
         function escapeHtml(text) {
             if (!text) return '';
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
+            return text.toString().replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m]));
         }
 
-        function showToast(message, type, allowRetry) {
-            if (typeof type === 'undefined') type = 'info';
-            if (typeof allowRetry === 'undefined') allowRetry = false;
-            
-            document.querySelectorAll('.custom-toast').forEach(function(el) { el.remove(); });
-            
+        // 信息提示框
+        function showToast(message, type) {
+            document.querySelectorAll('.custom-toast').forEach(el => el.remove());
             const toast = document.createElement('div');
-            toast.className = 'custom-toast fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-y-0 ' +
-                (type === 'error' ? 'bg-red-500 text-white' : 'bg-gray-800 text-white');
+            let bgColor = 'bg-gray-800';
+            if (type === 'error') bgColor = 'bg-red-500';
+            if (type === 'success') bgColor = 'bg-green-600';
             
-            var iconPath = type === 'error'
-                ? 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
-                : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-
-            var toastContent = '<div class="flex items-center">' +
-                '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="' + iconPath + '"></path>' +
-                '</svg><span>' + message + '</span></div>';
-            
-            if (allowRetry) {
-                toastContent += '<button class="mt-2 px-3 py-1 bg-white/20 rounded text-sm hover:bg-white/30 transition-colors w-full mt-2">点击重试</button>';
-            }
-            
-            toast.innerHTML = toastContent;
+            toast.className = 'custom-toast fixed bottom-4 right-4 px-4 py-2 rounded shadow-md z-50 text-xs text-white ' + bgColor;
+            toast.textContent = message;
             document.body.appendChild(toast);
-            
-            if (allowRetry) {
-                toast.querySelector('button').addEventListener('click', function() {
-                    loadGridData(true);
-                    toast.remove();
-                });
-            }
-            
-            setTimeout(function() {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(function() { toast.remove(); }, 300);
-            }, allowRetry ? 8000 : 3000);
+            setTimeout(() => { toast.remove(); }, 2500);
         }
     </script>
 
     <style>
-        #grid_container {
-            position: relative;
-            font-family: inherit !important;
-        }
-        
-        [data-dhx-theme="dark"] {
+        #grid_container { font-family: ui-sans-serif, system-ui, sans-serif !important; }
+        .dhx_grid {
             --dhx-color-primary: #4f46e5 !important;
-            --dhx-color-border: #374151 !important;
-            --dhx-color-bg: #1f2937 !important;
-            --dhx-color-list-item-hover: #374151 !important;
+            --dhx-color-border: #f3f4f6 !important;
+            --dhx-color-bg: #ffffff !important;
         }
-        
-        [data-dhx-theme="dark"] .dhx_grid-content,
-        [data-dhx-theme="light"] .dhx_grid-content {
-            border: none !important;
-        }
-        
-        [data-dhx-theme="dark"] .dhx_grid-header-cell,
-        [data-dhx-theme="dark"] .dhx_grid-cell {
-            border-color: #374151 !important;
-            background-color: #1f2937 !important;
-            color: #e5e7eb !important;
-        }
-        
-        [data-dhx-theme="light"] .dhx_grid-header-cell,
-        [data-dhx-theme="light"] .dhx_grid-cell {
-            border-color: #e5e7eb !important;
-            background-color: #ffffff !important;
-        }
-        
         .dhx_grid-header-cell {
+            background-color: #f9fafb !important;
+            color: #374151 !important;
             font-weight: 600 !important;
-            font-size: 0.875rem !important;
-            padding: 0 12px !important;
+            border-bottom: 2px solid #e5e7eb !important;
         }
+        .dhx_grid-cell { color: #4b5563 !important; border-bottom: 1px solid #f3f4f6 !important; }
+        .dhx_grid-row:hover .dhx_grid-cell { background-color: #f8fafc !important; }
         
-        .dhx_grid-cell {
-            padding: 10px 12px !important;
-            font-size: 0.875rem !important;
-            line-height: 1.25rem !important;
-        }
-        
-        .dhx_grid-row {
-            transition: background-color 0.2s ease !important;
-        }
-        
-        .dhx_grid-row:hover .dhx_grid-cell {
-            background-color: rgba(99, 102, 241, 0.05) !important;
-        }
-        
-        [data-dhx-theme="dark"] .dhx_grid-row:hover .dhx_grid-cell {
-            background-color: rgba(99, 102, 241, 0.1) !important;
-        }
-        
-        #empty_state {
-            height: 650px;
-        }
-
-        /* 表单深色模式适配 */
-        .dark .dhx_form {
-            --dhx-color-bg: #1f2937;
-            --dhx-color-text: #e5e7eb;
-            --dhx-color-border: #374151;
-            --dhx-color-input-bg: #374151;
+        .dhx_form-element__error {
+            color: #ef4444 !important;
+            font-size: 0.75rem !important;
+            margin-top: 4px !important;
+            display: block !important;
         }
     </style>
 </x-app-layout>
